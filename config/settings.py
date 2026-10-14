@@ -3,6 +3,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -59,29 +60,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# --- Database: SQLite by default, PostgreSQL (Supabase) when DB_ENGINE=postgres ---
-if os.getenv("DB_ENGINE") == "postgres":
-    import dj_database_url
-    if os.getenv("DATABASE_URL"):
-        # Automatically parses connection string URLs securely with SSL requirements
-        DATABASES = {
-            "default": dj_database_url.config(
-                default=os.environ.get("DATABASE_URL"),
-                conn_max_age=600,
-                ssl_require=True
-            )
-        }
-    else:
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.postgresql",
-                "NAME": os.getenv("DB_NAME", "cctv_booking"),
-                "USER": os.getenv("DB_USER", "postgres"),
-                "PASSWORD": os.getenv("DB_PASSWORD", ""),
-                "HOST": os.getenv("DB_HOST", "localhost"),
-                "PORT": os.getenv("DB_PORT", "5432"),
-            }
-        }
+# --- Database Routing Configuration (Supabase Cloud vs Local Fallback SQLite) -
+if os.getenv("DATABASE_URL"):
+    # Securely maps your IPv4 Supabase connection string pooler link directly
+    DATABASES = {
+        "default": dj_database_url.parse(
+            os.getenv("DATABASE_URL"),
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
 else:
     DATABASES = {
         "default": {
