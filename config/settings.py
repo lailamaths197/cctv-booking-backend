@@ -60,17 +60,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# --- Database Routing Configuration (Supabase Cloud vs Local Fallback SQLite) -
+# --- Resilient Database Routing (Forces Production Supabase Postgres Connection) ---
+import os
+from urllib.parse import urlparse
+
 if os.getenv("DATABASE_URL"):
-    # Securely maps your IPv4 Supabase connection string pooler link directly
+    # Parse the connection link parameters explicitly to break any fallback caches
+    url = urlparse(os.getenv("DATABASE_URL"))
+    
+    # Force a direct, explicit handshake to the external Supabase instance
     DATABASES = {
-        "default": dj_database_url.parse(
-            os.getenv("DATABASE_URL"),
-            conn_max_age=600,
-            ssl_require=True
-        )
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": url.path.lstrip("/"),
+            "USER": url.username,
+            "PASSWORD": url.password,
+            "HOST": url.hostname,
+            "PORT": url.port or 5432,
+            "OPTIONS": {
+                "sslmode": "require",
+            }
+        }
     }
 else:
+    # Local development SQLite workspace fallback configuration
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
