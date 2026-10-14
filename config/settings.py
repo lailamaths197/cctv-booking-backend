@@ -1,8 +1,7 @@
-"""Django settings for the CCTV Booking backend."""
+"""Django settings for the CCTV Booking backend production environment."""
 import os
 from datetime import timedelta
 from pathlib import Path
-
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -10,6 +9,8 @@ load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-insecure-key-change-me")
 DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
+
+# Production Host Configurations
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
 INSTALLED_APPS = [
@@ -28,6 +29,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # 👇 WHITE-NOISE STATIC ASSET COMPRESSION PRODUCTION MIDDLEWARE 👇
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -56,18 +59,29 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# --- Database: SQLite by default, PostgreSQL when DB_ENGINE=postgres ---------
+# --- Database: SQLite by default, PostgreSQL (Supabase) when DB_ENGINE=postgres ---
 if os.getenv("DB_ENGINE") == "postgres":
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("DB_NAME", "cctv_booking"),
-            "USER": os.getenv("DB_USER", "postgres"),
-            "PASSWORD": os.getenv("DB_PASSWORD", ""),
-            "HOST": os.getenv("DB_HOST", "localhost"),
-            "PORT": os.getenv("DB_PORT", "5432"),
+    import dj_database_url
+    if os.getenv("DATABASE_URL"):
+        # Automatically parses connection string URLs securely with SSL requirements
+        DATABASES = {
+            "default": dj_database_url.config(
+                default=os.environ.get("DATABASE_URL"),
+                conn_max_age=600,
+                ssl_require=True
+            )
         }
-    }
+    else:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": os.getenv("DB_NAME", "cctv_booking"),
+                "USER": os.getenv("DB_USER", "postgres"),
+                "PASSWORD": os.getenv("DB_PASSWORD", ""),
+                "HOST": os.getenv("DB_HOST", "localhost"),
+                "PORT": os.getenv("DB_PORT", "5432"),
+            }
+        }
 else:
     DATABASES = {
         "default": {
@@ -95,6 +109,14 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# --- Production Static Engine Storage Layout Configurations ---
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 # --- DRF + JWT ---------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -114,7 +136,9 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # lock this down in production
+# --- CORS Production Whitelists -----------------------------------------------
+CORS_ALLOW_ALL_ORIGINS = True  # Allows mobile connection footprints over public URLs
+CORS_ALLOW_CREDENTIALS = True
 
 # --- Razorpay ----------------------------------------------------------------
 RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "")

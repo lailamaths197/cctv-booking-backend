@@ -98,7 +98,7 @@ class Booking(models.Model):
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     is_paid = models.BooleanField(default=False, db_index=True)
-     extra_service_title = models.CharField(max_length=255, null=True, blank=True)
+    extra_service_title = models.CharField(max_length=255, null=True, blank=True)
     extra_service_description = models.TextField(max_length=2000, null=True, blank=True)
     extra_service_charge = models.DecimalField(
         max_digits=10, decimal_places=2, default=Decimal("0.00")
