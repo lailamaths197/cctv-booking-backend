@@ -64,33 +64,22 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # --- Resilient Database Routing (Forces Production Supabase Postgres Connection) ---
 
-if os.getenv("DATABASE_URL"):
-    # Parse the connection link parameters explicitly to break any fallback caches
-    url = urlparse(os.getenv("DATABASE_URL"))
-    
-    # Force a direct, explicit handshake to the external Supabase instance
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": url.path.lstrip("/"),
-            "USER": url.username,
-            "PASSWORD": url.password,
-            "HOST": url.hostname,
-            "PORT": url.port or 5432,
-            "OPTIONS": {
-                "sslmode": "require",
-            }
-        }
-    }
-else:
-    # Local development SQLite workspace fallback configuration
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+db_url = os.getenv("DATABASE_URL", "postgresql://postgres:AvT4YU%26.DWe$5y%2B@://supabase.com")
+url = urlparse(db_url)
 
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": url.path.lstrip("/"),
+        "USER": url.username,
+        "PASSWORD": url.password,
+        "HOST": url.hostname,
+        "PORT": url.port or 5432,
+        "OPTIONS": {
+            "sslmode": "require",
+        }
+    }
+}
 AUTH_USER_MODEL = "accounts.User"
 
 AUTH_PASSWORD_VALIDATORS = [
