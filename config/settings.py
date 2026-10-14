@@ -4,6 +4,8 @@ from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
+from urllib.parse import urlparse
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -61,8 +63,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # --- Resilient Database Routing (Forces Production Supabase Postgres Connection) ---
-import os
-from urllib.parse import urlparse
 
 if os.getenv("DATABASE_URL"):
     # Parse the connection link parameters explicitly to break any fallback caches
